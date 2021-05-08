@@ -1,0 +1,61 @@
+resource "aws_iam_role" "lambda_iam_role" {
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
+  policy_arn = aws_iam_policy.lambda_policy.arn
+  role = aws_iam_role.lambda_iam_role.name
+}
+
+resource "aws_iam_policy" "lambda_policy" {
+  policy = data.aws_iam_policy_document.lambda_policy_document.json
+}
+
+data "aws_iam_policy_document" "lambda_policy_document" {
+  statement {
+    sid       = "AllowSQSPermissions"
+    effect    = "Allow"
+    resources = ["arn:aws:sqs:*"]
+
+    actions = [
+      "sqs:*"
+    ]
+  }
+
+  statement {
+    sid       = "AllowInvokingLambdas"
+    effect    = "Allow"
+    resources = ["arn:aws:lambda:eu-central-1:*:function:*"]
+    actions   = ["lambda:InvokeFunction"]
+  }
+
+  statement {
+    sid       = "AllowCreatingLogGroups"
+    effect    = "Allow"
+    resources = ["arn:aws:logs:eu-central-1:*:*"]
+    actions   = ["logs:CreateLogGroup"]
+  }
+  statement {
+    sid       = "AllowWritingLogs"
+    effect    = "Allow"
+    resources = ["arn:aws:logs:eu-central-1:*:log-group:/aws/lambda/*:*"]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+  }
+}
